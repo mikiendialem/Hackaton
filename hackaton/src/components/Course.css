@@ -1,0 +1,39 @@
+*{
+    margin: 0;
+}
+.course{
+    width: 100%;
+    height: 700px;
+    background: rgb(12, 138, 235);
+}
+.course-sec{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4% 6%;
+}
+.course-1{
+    text-align: left;
+    color:#000;
+    background-color: #fff;
+    width:300px;
+    height: 400px;
+    border: hidden;
+    border-radius: 20px;
+}
+.course-1 h1{
+    font-size: 3rem;
+    line-height: normal;
+    letter-spacing:.1em;
+    word-wrap: break-word;
+    text-align: center;
+    margin-bottom: 6px;
+}
+.course-1 p {
+    max-width:90%;
+    white-space: nowrap;      /* This will prevent long words to be broken */
+    overflow:hidden;          /* To add a scrollbar if the content is too big for the container
+    */
+    text-overflow:ellipsis;   /* If the content exceeds the container's size, it'll
+    show an ellipsis (...) at the end of the string*/
+    }
