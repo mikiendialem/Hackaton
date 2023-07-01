@@ -34,7 +34,7 @@ function All() {
                     </div>
                 </div>
             </div>
-            <div className='test-sec2'>
+            <div className='test-sec1'>
                 <div className='test-first'>
                         <div className='test-sec1-check'>
                             <div className='prof'></div>
