@@ -5,6 +5,7 @@ import About from './components/About'
 import Course from './components/Course'
 import Contact from './components/Contact'
 import All from './components/All'
+import Signin from './components/Signin';
 
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         <Route path="/about" element={<About />}/>
         <Route path="/course"  element={<Course/>}/>
         <Route path="/contact" element={<Contact/>}/>
+        <Route path='/signin' element={<Signin/>}/>
       </Routes> 
     </Router>
   );
