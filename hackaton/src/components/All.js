@@ -12,6 +12,7 @@ function All() {
         <About/>
         <Course/>
         <div className='test'>
+            <h1>Testimonials</h1>
             <div className='test-sec1'>
                 <div className='test-first'>
                     <div className='test-sec1-check'>
@@ -58,25 +59,28 @@ function All() {
             </div>
         </div>
         <div className='meet'>
-            <div className='meet1'>
-                <div className='profile'></div>
-                <h2>Name</h2>
-                <p>Profession</p>
-            </div>
-            <div className='meet1'>
-                <div className='profile'></div>
-                <h2>Name</h2>
-                <p>Profession</p>
-            </div>
-            <div className='meet1'>
-                <div className='profile'></div>
-                <h2>Name</h2>
-                <p>Profession</p>
-            </div>
-            <div className='meet1'>
-                <div className='profile'></div>
-                <h2>Name</h2>
-                <p>Profession</p>
+            <h1>Meet Our Instructor</h1>
+            <div className='meet-sec'>
+                <div className='meet1'>
+                    <div className='profile'></div>
+                    <h2>Name</h2>
+                    <p>Profession</p>
+                </div>
+                <div className='meet1'>
+                    <div className='profile'></div>
+                    <h2>Name</h2>
+                    <p>Profession</p>
+                </div>
+                <div className='meet1'>
+                    <div className='profile'></div>
+                    <h2>Name</h2>
+                    <p>Profession</p>
+                </div>
+                <div className='meet1'>
+                    <div className='profile'></div>
+                    <h2>Name</h2>
+                    <p>Profession</p>
+                </div>
             </div>  
         </div>
         <div className="partner">

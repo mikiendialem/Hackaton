@@ -6,6 +6,9 @@
     flex-direction: column;
     flex-wrap: wrap;
 }
+.test h1{
+    color: black;
+}
 .test-sec1{
     display: flex;
     justify-content: space-between;
@@ -21,6 +24,7 @@
     border: hidden;
     background-image: url('./Assets/profile_3135715.png');
     background-size:cover;
+    position: relative;
     transform: rotate(323deg);
     margin-bottom: 20px;
 }
@@ -42,12 +46,18 @@
     text-align: center;
 }
 .meet{
+    width: 100%;
+    height: 400px;
+    background-color: rgb(43, 149, 182);
+}
+.meet-sec{
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
-    height: 400px;
-    background-color: rgb(43, 149, 182);;
+    
+}
+.meet h1{
+    color: #fff;
 }
 .meet1{
     display: flex;

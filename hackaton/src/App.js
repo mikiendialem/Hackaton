@@ -6,6 +6,7 @@ import Course from './components/Course'
 import Contact from './components/Contact'
 import All from './components/All'
 import Signin from './components/Signin';
+import Signup from './components/Signup';
 
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Route path="/course"  element={<Course/>}/>
         <Route path="/contact" element={<Contact/>}/>
         <Route path='/signin' element={<Signin/>}/>
+        <Route path='/signup' element={<Signup/>}/>
       </Routes> 
     </Router>
   );

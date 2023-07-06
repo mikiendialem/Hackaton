@@ -59,8 +59,8 @@ function Signin() {
             <div className='login'>
                 <form>
                     <label>
-                        Email<br/>
-                        <input type="email" placeholder="example@gmail.com" />
+                        Username:<br/>
+                        <input type="email" placeholder="Ex.jhondoe" />
                     </label>
                     <label>
                         Password<br/>
