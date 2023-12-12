@@ -468,6 +468,7 @@ Rishabh Pandey
 - [Shardul Tomat@DevsocPI](https://github.com/ShardulT04)
 - [Aadi joshi](https://github.com/AadiJ2022) @devsoc PI Devsoc
 - [Devansh Mehta@DevsocPI](https://github.com/Coderpromax8)
+- [Mikiendialem](https://github.com/mikiendialem)
 - [Utkarsh@DevsocPI](https://github.com/0xAnon0602)
 - <harhsit kapoor>@Devsoc@PI
 - [Daminda Dinesh Imaduwa Gamage](https://github.com/dineshigdd)
