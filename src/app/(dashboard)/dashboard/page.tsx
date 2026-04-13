@@ -8,6 +8,7 @@ import TradeForm from '@/components/TradeForm'
 import TradeTable from '@/components/TradeTable'
 import DaysTable from '@/components/DaysTable'
 import dynamic from 'next/dynamic'
+import Link from "next/link";
 
 const Charts = dynamic(() => import('@/components/Charts'), { ssr: false })
 
@@ -61,6 +62,20 @@ export default function DashboardPage() {
           }}>
             {trades.length} {trades.length === 1 ? 'trade' : 'trades'}
           </span>
+          <Link href="/profile"
+            style={{
+              padding: '6px 14px', borderRadius: 999,
+              border: '1px solid rgba(148,163,184,0.35)',
+              background: 'transparent', color: 'var(--color-text-muted)',
+              fontSize: '0.75rem', cursor: 'pointer', fontFamily: 'inherit',
+              letterSpacing: '0.04em', textTransform: 'uppercase',
+              textDecoration: 'none', display: 'inline-flex',
+              alignItems: 'center', gap: 6,
+              transition: 'all 0.15s ease',
+            }}
+          >
+            👤 Profile
+          </Link>
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
             style={{
