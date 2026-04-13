@@ -7,7 +7,7 @@ import Link from 'next/link'
 
 export default function ProfilePage() {
   const { data: session, update } = useSession()
-  const router = useRouter()
+  //const router = useRouter()
 
   const [name, setName] = useState(session?.user?.name || '')
   const [currentPassword, setCurrentPassword] = useState('')
