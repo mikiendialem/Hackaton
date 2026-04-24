@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const { symbol, direction, date, entry, exit, size, fees, notes } = body
+    const { symbol, direction, date, entry, exit, size, fees, notes, strategy, session: tradeSession } = body
 
     const priceDiff = direction === 'long' ? exit - entry : entry - exit
     const gross = priceDiff * size
@@ -44,6 +44,8 @@ export async function POST(req: Request) {
         fees: fees || 0,
         pl, r_multiple,
         notes: notes || '',
+        strategy: strategy || 'None',
+        session: tradeSession || 'None',
       })
       .select()
       .single()
