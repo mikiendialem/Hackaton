@@ -39,31 +39,71 @@ function buildCalendarDays(summaries: DaySummary[], year: number, month: number)
   return cells
 }
 
-// Get heatmap color based on PL intensity
 function getHeatmapColor(pl: number, maxAbsPL: number): string {
   if (maxAbsPL === 0) return 'rgba(148,163,184,0.08)'
   const intensity = Math.min(Math.abs(pl) / maxAbsPL, 1)
-
   if (pl > 0) {
-    const alpha = 0.15 + intensity * 0.7
+    const alpha = 0.12 + intensity * 0.75
     return `rgba(34,197,94,${alpha.toFixed(2)})`
-  } else if (pl < 0) {
-    const alpha = 0.15 + intensity * 0.7
+  } else {
+    const alpha = 0.12 + intensity * 0.75
     return `rgba(249,115,115,${alpha.toFixed(2)})`
   }
-  return 'rgba(148,163,184,0.08)'
 }
 
-function getBorderColor(pl: number, maxAbsPL: number): string {
+function getHeatmapBorder(pl: number, maxAbsPL: number): string {
   if (maxAbsPL === 0) return 'rgba(148,163,184,0.1)'
   const intensity = Math.min(Math.abs(pl) / maxAbsPL, 1)
-  if (pl > 0) return `rgba(34,197,94,${(0.2 + intensity * 0.6).toFixed(2)})`
-  if (pl < 0) return `rgba(249,115,115,${(0.2 + intensity * 0.6).toFixed(2)})`
-  return 'rgba(148,163,184,0.1)'
+  if (pl > 0) {
+    return `rgba(34,197,94,${(0.2 + intensity * 0.6).toFixed(2)})`
+  } else {
+    return `rgba(249,115,115,${(0.2 + intensity * 0.6).toFixed(2)})`
+  }
 }
 
-// ─── Calendar Heatmap ─────────────────────────────────────────────
-function CalendarView({ summaries }: { summaries: DaySummary[] }) {
+// ─── Tooltip ──────────────────────────────────────────────────────
+function DayTooltip({ summary }: { summary: DaySummary }) {
+  const dateLabel = new Date(summary.date + 'T00:00:00').toLocaleDateString(undefined, {
+    weekday: 'long', month: 'long', day: 'numeric',
+  })
+  return (
+    <div style={{
+      position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%',
+      transform: 'translateX(-50%)', zIndex: 10,
+      background: 'rgba(2,6,23,0.98)',
+      border: '1px solid rgba(148,163,184,0.2)',
+      borderRadius: 12, padding: '12px 14px',
+      minWidth: 180, boxShadow: '0 16px 40px rgba(0,0,0,0.6)',
+      pointerEvents: 'none',
+    }}>
+      <p style={{ margin: '0 0 8px', fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+        {dateLabel}
+      </p>
+      <p style={{
+        margin: '0 0 6px', fontSize: '1.1rem', fontWeight: 700,
+        color: summary.totalPL >= 0 ? 'var(--color-positive)' : 'var(--color-negative)',
+      }}>
+        {formatCurrency(summary.totalPL)}
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {[
+          { label: 'Trades', value: summary.totalTrades },
+          { label: 'Wins', value: summary.wins },
+          { label: 'Losses', value: summary.losses },
+          { label: 'Win Rate', value: `${summary.winRate.toFixed(0)}%` },
+        ].map(item => (
+          <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{item.label}</span>
+            <span style={{ fontSize: '0.72rem', fontWeight: 600 }}>{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Heatmap Calendar ─────────────────────────────────────────────
+function HeatmapCalendar({ summaries }: { summaries: DaySummary[] }) {
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
@@ -81,8 +121,8 @@ function CalendarView({ summaries }: { summaries: DaySummary[] }) {
     return Math.max(...monthSummaries.map(s => Math.abs(s.totalPL)), 1)
   }, [summaries, year, month])
 
-  // Month stats
-  const monthStats = useMemo(() => {
+  // Month totals
+  const monthSummary = useMemo(() => {
     const monthSummaries = summaries.filter(s => {
       const d = new Date(s.date + 'T00:00:00')
       return d.getFullYear() === year && d.getMonth() === month
@@ -98,19 +138,14 @@ function CalendarView({ summaries }: { summaries: DaySummary[] }) {
     if (month === 0) { setMonth(11); setYear(y => y - 1) }
     else setMonth(m => m - 1)
   }
-
   function next() {
     if (month === 11) { setMonth(0); setYear(y => y + 1) }
     else setMonth(m => m + 1)
   }
 
-  const hoveredSummary = hoveredDate
-    ? summaries.find(s => s.date === hoveredDate)
-    : null
-
   return (
     <div>
-      {/* Month Nav + Stats */}
+      {/* Month Nav + Summary */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button onClick={prev} style={navBtnStyle}>←</button>
@@ -118,30 +153,24 @@ function CalendarView({ summaries }: { summaries: DaySummary[] }) {
           <button onClick={next} style={navBtnStyle}>→</button>
         </div>
 
-        {/* Month Summary Pills */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <span style={{
-            padding: '4px 12px', borderRadius: 999, fontSize: '0.75rem', fontWeight: 600,
-            background: monthStats.totalPL >= 0 ? 'rgba(34,197,94,0.12)' : 'rgba(249,115,115,0.12)',
-            color: monthStats.totalPL >= 0 ? 'var(--color-positive)' : 'var(--color-negative)',
-            border: `1px solid ${monthStats.totalPL >= 0 ? 'rgba(34,197,94,0.2)' : 'rgba(249,115,115,0.2)'}`,
-          }}>
-            {formatCurrency(monthStats.totalPL)}
-          </span>
-          <span style={{
-            padding: '4px 12px', borderRadius: 999, fontSize: '0.75rem',
-            background: 'rgba(34,197,94,0.08)', color: 'var(--color-positive)',
-            border: '1px solid rgba(34,197,94,0.15)',
-          }}>
-            🟢 {monthStats.profitDays}d
-          </span>
-          <span style={{
-            padding: '4px 12px', borderRadius: 999, fontSize: '0.75rem',
-            background: 'rgba(249,115,115,0.08)', color: 'var(--color-negative)',
-            border: '1px solid rgba(249,115,115,0.15)',
-          }}>
-            🔴 {monthStats.lossDays}d
-          </span>
+        {/* Month Stats */}
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          {[
+            { label: 'Month P&L', value: formatCurrency(monthSummary.totalPL), color: monthSummary.totalPL >= 0 ? 'var(--color-positive)' : 'var(--color-negative)' },
+            { label: 'Trading Days', value: monthSummary.tradingDays, color: 'var(--color-text-primary)' },
+            { label: 'Green Days', value: monthSummary.profitDays, color: 'var(--color-positive)' },
+            { label: 'Red Days', value: monthSummary.lossDays, color: 'var(--color-negative)' },
+          ].map(stat => (
+            <div key={stat.label} style={{
+              padding: '6px 12px', borderRadius: 10,
+              background: 'rgba(15,23,42,0.6)',
+              border: '1px solid rgba(148,163,184,0.1)',
+              textAlign: 'center',
+            }}>
+              <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{stat.label}</p>
+              <p style={{ margin: '2px 0 0', fontSize: '0.88rem', fontWeight: 700, color: stat.color }}>{stat.value}</p>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -166,129 +195,80 @@ function CalendarView({ summaries }: { summaries: DaySummary[] }) {
             ? new Date(cell.date + 'T00:00:00').getDate()
             : i - firstDay + 1
 
-          const isToday = cell?.date === today.toISOString().slice(0, 10)
-          const isHovered = cell?.date === hoveredDate
-          const bg = cell ? getHeatmapColor(cell.totalPL, maxAbsPL) : 'rgba(148,163,184,0.05)'
-          const border = cell ? getBorderColor(cell.totalPL, maxAbsPL) : 'rgba(148,163,184,0.08)'
-
+          const dateStr = cell?.date || ''
+          const isToday = dateStr === today.toISOString().slice(0, 10)
+          const isHovered = hoveredDate === dateStr && cell !== null
+          const isWeekend = (i % 7 === 0 || i % 7 === 6)
           return (
             <div
               key={i}
-              onMouseEnter={() => cell && setHoveredDate(cell.date)}
+              onMouseEnter={() => cell && setHoveredDate(dateStr)}
               onMouseLeave={() => setHoveredDate(null)}
               style={{
-                minHeight: 76, borderRadius: 10, padding: '7px 8px',
-                background: bg,
-                border: `1px solid ${border}`,
-                outline: isToday ? '2px solid rgba(34,197,94,0.5)' : 'none',
+                minHeight: 72, borderRadius: 10,
+                padding: '6px 8px', cursor: cell ? 'pointer' : 'default',
+                position: 'relative',
+                border: `1px solid ${cell
+                  ? getHeatmapBorder(cell.totalPL, maxAbsPL)
+                  : isWeekend
+                  ? 'rgba(148,163,184,0.06)'
+                  : 'rgba(148,163,184,0.1)'}`,
+                background: cell
+                  ? getHeatmapColor(cell.totalPL, maxAbsPL)
+                  : isWeekend
+                  ? 'rgba(15,23,42,0.2)'
+                  : 'rgba(15,23,42,0.35)',
+                outline: isToday ? '2px solid rgba(34,197,94,0.6)' : 'none',
                 outlineOffset: 1,
+                transition: 'transform 0.12s ease, box-shadow 0.12s ease',
                 transform: isHovered ? 'scale(1.04)' : 'scale(1)',
-                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                boxShadow: isHovered ? '0 4px 16px rgba(0,0,0,0.3)' : 'none',
-                cursor: cell ? 'pointer' : 'default',
+                boxShadow: isHovered
+                  ? cell && cell.totalPL >= 0
+                    ? '0 4px 20px rgba(34,197,94,0.25)'
+                    : '0 4px 20px rgba(249,115,115,0.25)'
+                  : 'none',
               }}
             >
               <div style={{
                 fontSize: '0.7rem', fontWeight: 600, marginBottom: 4,
                 color: isToday ? 'var(--color-accent)' : 'var(--color-text-muted)',
-              }}>
-                {day}
-              </div>
+              }}>{day}</div>
               {cell && (
                 <>
                   <div style={{
-                    fontSize: '0.76rem', fontWeight: 700, lineHeight: 1.2,
+                    fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.2,
                     color: cell.totalPL >= 0 ? 'var(--color-positive)' : 'var(--color-negative)',
                   }}>
-                    {formatCurrency(cell.totalPL)}
+                    {formatCurrency(cell.totalPL * 100)}
                   </div>
-                  <div style={{ fontSize: '0.62rem', color: 'rgba(148,163,184,0.7)', marginTop: 3 }}>
+                  <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
                     {cell.totalTrades}t · {cell.winRate.toFixed(0)}%
                   </div>
                 </>
               )}
-              {!cell && (
-                <div style={{ fontSize: '0.62rem', color: 'rgba(148,163,184,0.2)', marginTop: 4 }}>
-                  —
-                </div>
-              )}
+              {/* Tooltip */}
+              {isHovered && cell && <DayTooltip summary={cell} />}
             </div>
           )
         })}
       </div>
 
-      {/* Hover Tooltip */}
-      {hoveredSummary && (
-        <div style={{
-          marginTop: 14, padding: '14px 18px', borderRadius: 12,
-          background: 'rgba(15,23,42,0.9)',
-          border: `1px solid ${hoveredSummary.totalPL >= 0 ? 'rgba(34,197,94,0.3)' : 'rgba(249,115,115,0.3)'}`,
-          display: 'flex', gap: 24, flexWrap: 'wrap',
-          animation: 'fadeIn 0.15s ease',
-        }}>
-          <div>
-            <p style={{ margin: '0 0 2px', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)' }}>Date</p>
-            <p style={{ margin: 0, fontWeight: 600, fontSize: '0.88rem' }}>
-              {new Date(hoveredSummary.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-            </p>
-          </div>
-          <div>
-            <p style={{ margin: '0 0 2px', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)' }}>P&L</p>
-            <p style={{ margin: 0, fontWeight: 700, fontSize: '0.88rem', color: hoveredSummary.totalPL >= 0 ? 'var(--color-positive)' : 'var(--color-negative)' }}>
-              {formatCurrency(hoveredSummary.totalPL)}
-            </p>
-          </div>
-          <div>
-            <p style={{ margin: '0 0 2px', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)' }}>Trades</p>
-            <p style={{ margin: 0, fontWeight: 600, fontSize: '0.88rem' }}>{hoveredSummary.totalTrades}</p>
-          </div>
-          <div>
-            <p style={{ margin: '0 0 2px', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)' }}>Win Rate</p>
-            <p style={{ margin: 0, fontWeight: 600, fontSize: '0.88rem', color: hoveredSummary.winRate >= 50 ? 'var(--color-positive)' : 'var(--color-negative)' }}>
-              {hoveredSummary.winRate.toFixed(0)}%
-            </p>
-          </div>
-          <div>
-            <p style={{ margin: '0 0 2px', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)' }}>W / L</p>
-            <p style={{ margin: 0, fontWeight: 600, fontSize: '0.88rem' }}>
-              <span style={{ color: 'var(--color-positive)' }}>{hoveredSummary.wins}W</span>
-              {' / '}
-              <span style={{ color: 'var(--color-negative)' }}>{hoveredSummary.losses}L</span>
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Heatmap Legend */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Intensity:</span>
-        {[0.15, 0.35, 0.55, 0.75, 0.9].map((alpha, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{
-              width: 14, height: 14, borderRadius: 4,
-              background: `rgba(34,197,94,${alpha})`,
-            }} />
-          </div>
-        ))}
-        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: 4 }}>Profit</span>
-        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', margin: '0 4px' }}>·</span>
-        {[0.15, 0.35, 0.55, 0.75, 0.9].map((alpha, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{
-              width: 14, height: 14, borderRadius: 4,
-              background: `rgba(249,115,115,${alpha})`,
-            }} />
-          </div>
-        ))}
-        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: 4 }}>Loss</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, marginTop: 14 }}>
+        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Less</span>
+        <div style={{ display: 'flex', gap: 3 }}>
+          {[0.15, 0.35, 0.55, 0.75, 0.95].map(alpha => (
+            <div key={alpha} style={{ display: 'flex', gap: 3 }}>
+              <div style={{ width: 14, height: 14, borderRadius: 4, background: `rgba(249,115,115,${alpha})` }} />
+            </div>
+          ))}
+          <div style={{ width: 14, height: 14, borderRadius: 4, background: 'rgba(148,163,184,0.1)', margin: '0 4px' }} />
+          {[0.15, 0.35, 0.55, 0.75, 0.95].map(alpha => (
+            <div key={alpha} style={{ width: 14, height: 14, borderRadius: 4, background: `rgba(34,197,94,${alpha})` }} />
+          ))}
+        </div>
+        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>More</span>
       </div>
-
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   )
 }
@@ -315,12 +295,12 @@ function TableView({ summaries }: { summaries: DaySummary[] }) {
           {summaries.length === 0 ? (
             <tr>
               <td colSpan={7} style={{
-                padding: '32px 10px', textAlign: 'center',
+                padding: '40px 10px', textAlign: 'center',
                 color: 'var(--color-text-muted)', fontSize: '0.85rem',
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: '2rem' }}>📭</span>
-                  <span>No trading days yet.</span>
+                  <span>No trading days yet. Log your first trade to see daily performance.</span>
                 </div>
               </td>
             </tr>
@@ -332,43 +312,43 @@ function TableView({ summaries }: { summaries: DaySummary[] }) {
               const avgPL = s.totalPL / s.totalTrades
               return (
                 <tr key={s.date} style={{
-                  borderBottom: '1px solid rgba(148,163,184,0.1)',
-                  transition: 'background 0.15s ease',
+                  borderBottom: '1px solid rgba(148,163,184,0.08)',
+                  transition: 'background 0.12s ease',
                 }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'rgba(15,23,42,0.6)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <td style={{ padding: '10px 10px', whiteSpace: 'nowrap', fontWeight: 500 }}>
-                    {dateLabel}
-                  </td>
-                  <td style={{ padding: '10px 10px' }}>{s.totalTrades}</td>
-                  <td style={{ padding: '10px 10px', color: 'var(--color-positive)', fontWeight: 600 }}>{s.wins}</td>
-                  <td style={{ padding: '10px 10px', color: 'var(--color-negative)', fontWeight: 600 }}>{s.losses}</td>
-                  <td style={{ padding: '10px 10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{
-                        flex: 1, height: 4, borderRadius: 999,
-                        background: 'rgba(148,163,184,0.15)', maxWidth: 60,
-                      }}>
+                        width: 8, height: 8, borderRadius: '50%',
+                        background: s.totalPL >= 0 ? 'var(--color-accent)' : 'var(--color-negative)',
+                        boxShadow: s.totalPL >= 0 ? '0 0 6px rgba(34,197,94,0.5)' : '0 0 6px rgba(249,115,115,0.5)',
+                      }} />
+                      {dateLabel}
+                    </div>
+                  </td>
+                  <td style={{ padding: '10px 10px' }}>{s.totalTrades}</td>
+                  <td style={{ padding: '10px 10px', color: 'var(--color-positive)', fontWeight: 500 }}>{s.wins}</td>
+                  <td style={{ padding: '10px 10px', color: 'var(--color-negative)', fontWeight: 500 }}>{s.losses}</td>
+                  <td style={{ padding: '10px 10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ flex: 1, height: 4, borderRadius: 999, background: 'rgba(148,163,184,0.15)', maxWidth: 60 }}>
                         <div style={{
                           height: '100%', borderRadius: 999,
                           width: `${s.winRate}%`,
                           background: s.winRate >= 50 ? 'var(--color-accent)' : 'var(--color-negative)',
+                          transition: 'width 0.3s ease',
                         }} />
                       </div>
-                      <span style={{
-                        fontWeight: 600,
-                        color: s.winRate >= 50 ? 'var(--color-positive)' : 'var(--color-negative)',
-                      }}>
-                        {s.winRate.toFixed(0)}%
-                      </span>
+                      <span style={{ fontWeight: 600 }}>{s.winRate.toFixed(0)}%</span>
                     </div>
                   </td>
                   <td style={{
                     padding: '10px 10px', fontWeight: 700, whiteSpace: 'nowrap',
                     color: s.totalPL >= 0 ? 'var(--color-positive)' : 'var(--color-negative)',
                   }}>
-                    {formatCurrency(s.totalPL)}
+                    {formatCurrency(s.totalPL * 100)}
                   </td>
                   <td style={{
                     padding: '10px 10px', whiteSpace: 'nowrap',
@@ -386,7 +366,7 @@ function TableView({ summaries }: { summaries: DaySummary[] }) {
   )
 }
 
-// ─── Nav Button Style ─────────────────────────────────────────────
+// ─── Nav Button ───────────────────────────────────────────────────
 const navBtnStyle: React.CSSProperties = {
   background: 'rgba(15,23,42,0.9)',
   border: '1px solid rgba(148,163,184,0.2)',
@@ -403,21 +383,20 @@ export default function DaysTable({ trades }: { trades: Trade[] }) {
 
   return (
     <div className="card" style={{ marginBottom: 28 }}>
+      {/* Header + Toggle */}
       <div style={{
         display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', marginBottom: 20,
-        flexWrap: 'wrap', gap: 12,
+        justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12,
       }}>
         <div>
           <h2 style={{ margin: 0, fontSize: '1rem' }}>Daily Performance</h2>
           <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-            Heatmap intensity reflects profit/loss magnitude
+            Heatmap intensity reflects profit and loss magnitude
           </p>
         </div>
         <div style={{
           display: 'flex', gap: 4,
-          background: 'rgba(15,23,42,0.9)',
-          borderRadius: 10, padding: 4,
+          background: 'rgba(15,23,42,0.9)', borderRadius: 10, padding: 4,
           border: '1px solid rgba(148,163,184,0.15)',
         }}>
           {(['calendar', 'table'] as const).map(v => (
@@ -429,14 +408,14 @@ export default function DaysTable({ trades }: { trades: Trade[] }) {
               background: view === v ? 'rgba(34,197,94,0.15)' : 'transparent',
               color: view === v ? 'var(--color-accent)' : 'var(--color-text-muted)',
             }}>
-              {v === 'calendar' ? '🔥 Heatmap' : '📊 Table'}
+              {v === 'calendar' ? '🌡️ Heatmap' : '📊 Table'}
             </button>
           ))}
         </div>
       </div>
 
       {view === 'calendar'
-        ? <CalendarView summaries={summaries} />
+        ? <HeatmapCalendar summaries={summaries} />
         : <TableView summaries={summaries} />
       }
     </div>

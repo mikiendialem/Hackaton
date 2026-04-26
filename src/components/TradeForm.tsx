@@ -6,6 +6,19 @@ import { Trade } from '@/types/index'
 const STRATEGIES = ['None', 'SMC', 'ICT', 'Breakout', 'Reversal', 'News', 'Liquidity Grab', 'Scalp', 'Swing']
 const SESSIONS = ['None', 'London', 'New York', 'Asia']
 
+const instruments: Record<string, { pipValuePerLot: number }> = {
+  EURUSD: { pipValuePerLot: 100000 },
+  GBPUSD: { pipValuePerLot: 100000 },
+  USDJPY: { pipValuePerLot: 1000 },
+  XAUUSD: { pipValuePerLot: 100 },
+  NAS100: { pipValuePerLot: 100 },
+}
+
+function calculatePnL(symbol: string, entry: number, exit: number, size: number) {
+  const instrument = instruments[symbol] || { pipValuePerLot: 10 }
+  const move = Math.abs(exit - entry)
+  return move * size * instrument.pipValuePerLot
+}
 interface Props {
   onTradeAdded: (trade: Trade) => void
 }
@@ -13,6 +26,26 @@ interface Props {
 export default function TradeForm({ onTradeAdded }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const [preview, setPreview] = useState({
+    pnl: 0,
+  })
+
+  function handlePreview(e: React.ChangeEvent<HTMLInputElement>) {
+    const form = e.currentTarget.form
+    if (!form) return
+
+    const symbol = (form.symbol.value || '').toUpperCase()
+    const entry = parseFloat(form.entry.value)
+    const exit = parseFloat(form.exit.value)
+    const size = parseFloat(form.size.value)
+
+    if (!symbol || !entry || !exit || !size) return
+
+    const pnl = calculatePnL(symbol, entry, exit, size)
+
+    setPreview({ pnl })
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -93,7 +126,7 @@ export default function TradeForm({ onTradeAdded }: Props) {
         {/* Symbol */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <label style={labelStyle}>Symbol</label>
-          <input name="symbol" type="text" required placeholder="e.g. NQ" style={inputStyle} />
+          <input name="symbol" type="text" required placeholder="e.g. NQ" style={inputStyle} onChange={handlePreview} />
         </div>
 
         {/* Direction + Date */}
@@ -115,11 +148,11 @@ export default function TradeForm({ onTradeAdded }: Props) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <label style={labelStyle}>Entry Price</label>
-            <input name="entry" type="number" step="0.01" required style={inputStyle} />
+            <input name="entry" type="number" step="0.001" required style={inputStyle} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <label style={labelStyle}>Exit Price</label>
-            <input name="exit" type="number" step="0.01" required style={inputStyle} />
+            <input name="exit" type="number" step="0.001" required style={inputStyle} />
           </div>
         </div>
 
@@ -127,11 +160,23 @@ export default function TradeForm({ onTradeAdded }: Props) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <label style={labelStyle}>Position Size</label>
-            <input name="size" type="number" step="1" required style={inputStyle} />
+            <input name="size" type="number" step="0.01" min="0.01" max="100" required style={inputStyle} onChange={handlePreview} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <label style={labelStyle}>Fees (optional)</label>
             <input name="fees" type="number" step="0.01" placeholder="0" style={inputStyle} />
+          </div>
+        </div>
+        <div style={{
+          padding: '10px 12px',
+          borderRadius: 8,
+          background: 'rgba(34,197,94,0.08)',
+          border: '1px solid rgba(34,197,94,0.2)',
+          fontSize: '0.82rem'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Estimated PnL</span>
+            <strong>${preview.pnl.toFixed(2)}</strong>
           </div>
         </div>
 

@@ -29,10 +29,31 @@ export function calcAvgR(trades: Trade[]): number {
   return trades.reduce((s, t) => s + t.r_multiple, 0) / trades.length
 }
 
-export function calcTotalPL(trades: Trade[]): number {
-  return trades.reduce((s, t) => s + t.pl, 0)
+// export function calcTotalPL(trades: Trade[]): number {
+//   return trades.reduce((s, t) => s + t.pl, 0)
+// }
+const instruments: Record<string, { pipValuePerLot: number }> = {
+  EURUSD: { pipValuePerLot: 100000 },
+  GBPUSD: { pipValuePerLot: 100000 },
+  USDJPY: { pipValuePerLot: 1000 },
+  XAUUSD: { pipValuePerLot: 100 },
+  NAS100: { pipValuePerLot: 100 },
 }
 
+function getCorrectPL(t: Trade) {
+  const instrument = instruments[t.symbol] || { pipValuePerLot: 1000 }
+
+  const move =
+    t.direction === 'long'
+      ? t.exit - t.entry
+      : t.entry - t.exit
+
+  return move * t.size * instrument.pipValuePerLot - (t.fees || 0)
+}
+
+export function calcTotalPL(trades: Trade[]): number {
+  return trades.reduce((s, t) => s + getCorrectPL(t), 0)
+}
 // ─── Equity Curve ─────────────────────────────────────────────────
 export function buildEquityCurve(trades: Trade[]): {
   labels: string[]

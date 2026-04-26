@@ -82,7 +82,6 @@ export default function TradeTable({ trades, onTradeDeleted }: Props) {
                 })
                 const isConfirming = confirmId === t.id
                 const isDeleting = deletingId === t.id
-
                 return (
                   <tr
                     key={t.id}
@@ -121,7 +120,17 @@ export default function TradeTable({ trades, onTradeDeleted }: Props) {
                       padding: '8px 10px', whiteSpace: 'nowrap', fontWeight: 600,
                       color: t.pl >= 0 ? 'var(--color-positive)' : 'var(--color-negative)',
                     }}>
-                      {formatCurrency(t.pl)}
+                      {formatCurrency(
+                          t.pl * (
+                            {
+                              EURUSD: 100000,
+                              GBPUSD: 100000,
+                              USDJPY: 1000,
+                              XAUUSD: 100,
+                              NAS100: 100,
+                            }[t.symbol] || 1
+                          )
+                          )}
                     </td>
                     <td style={{
                       padding: '8px 10px',
