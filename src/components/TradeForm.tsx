@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Trade } from '@/types/index'
+import { INSTRUMENT_TYPES } from '@/lib/plCalculator'
 
 const STRATEGIES = ['None', 'SMC', 'ICT', 'Breakout', 'Reversal', 'News', 'Liquidity Grab', 'Scalp', 'Swing']
 const SESSIONS = ['None', 'London', 'New York', 'Asia']
@@ -66,6 +67,7 @@ export default function TradeForm({ onTradeAdded }: Props) {
       notes: fd.get('notes') as string,
       strategy: fd.get('strategy') as string,
       session: fd.get('session') as string,
+      instrument_type: fd.get('instrument_type') as string,
     }
 
     const res = await fetch('/api/trades', {
@@ -126,7 +128,24 @@ export default function TradeForm({ onTradeAdded }: Props) {
         {/* Symbol */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <label style={labelStyle}>Symbol</label>
-          <input name="symbol" type="text" required placeholder="e.g. NQ" style={inputStyle} onChange={handlePreview} />
+          <input
+            name="symbol" type="text" required
+            placeholder="e.g. XAUUSD, NAS100, EURUSD"
+            style={inputStyle}
+          />
+          <p style={{ margin: '3px 0 0', fontSize: '0.68rem', color: 'rgba(148,163,184,0.5)' }}>
+            Use exact symbol: XAUUSD, NAS100, EURUSD, GBPUSD...
+          </p>
+        </div>
+
+        {/* Instrument Type */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={labelStyle}>Instrument Type</label>
+          <select name="instrument_type" style={inputStyle}>
+            {INSTRUMENT_TYPES.map(i => (
+              <option key={i.value} value={i.value}>{i.label}</option>
+            ))}
+          </select>
         </div>
 
         {/* Direction + Date */}

@@ -17,9 +17,10 @@ function buildDaySummaries(trades: Trade[]): DaySummary[] {
   return Array.from(map.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, dayTrades]) => {
-      const totalPL = dayTrades.reduce((sum, t) => sum + t.pl, 0)
-      const wins = dayTrades.filter(t => t.pl > 0).length
-      const losses = dayTrades.filter(t => t.pl < 0).length
+      // Force convert to number to avoid string concatenation bug
+      const totalPL = dayTrades.reduce((sum, t) => sum + Number(t.pl), 0)
+      const wins = dayTrades.filter(t => Number(t.pl) > 0).length
+      const losses = dayTrades.filter(t => Number(t.pl) < 0).length
       const totalTrades = dayTrades.length
       const winRate = totalTrades ? (wins / totalTrades) * 100 : 0
       return { date, trades: dayTrades, totalPL, wins, losses, winRate, totalTrades }
@@ -121,18 +122,18 @@ function HeatmapCalendar({ summaries }: { summaries: DaySummary[] }) {
     return Math.max(...monthSummaries.map(s => Math.abs(s.totalPL)), 1)
   }, [summaries, year, month])
 
-  // Month totals
+  // Month totals has one error here, cuz the monthly P&L doesn't shows exact sum
   const monthSummary = useMemo(() => {
-    const monthSummaries = summaries.filter(s => {
-      const d = new Date(s.date + 'T00:00:00')
-      return d.getFullYear() === year && d.getMonth() === month
-    })
-    const totalPL = monthSummaries.reduce((s, d) => s + d.totalPL, 0)
-    const tradingDays = monthSummaries.length
-    const profitDays = monthSummaries.filter(d => d.totalPL > 0).length
-    const lossDays = monthSummaries.filter(d => d.totalPL < 0).length
-    return { totalPL, tradingDays, profitDays, lossDays }
-  }, [summaries, year, month])
+  const monthSummaries = summaries.filter(s => {
+    const d = new Date(s.date + 'T00:00:00')
+    return d.getFullYear() === year && d.getMonth() === month
+  })
+  const totalPL = monthSummaries.reduce((s, d) => s + Number(d.totalPL), 0)
+  const tradingDays = monthSummaries.length
+  const profitDays = monthSummaries.filter(d => Number(d.totalPL) > 0).length
+  const lossDays = monthSummaries.filter(d => Number(d.totalPL) < 0).length
+  return { totalPL, tradingDays, profitDays, lossDays }
+}, [summaries, year, month])
 
   function prev() {
     if (month === 0) { setMonth(11); setYear(y => y - 1) }
@@ -239,7 +240,7 @@ function HeatmapCalendar({ summaries }: { summaries: DaySummary[] }) {
                     fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.2,
                     color: cell.totalPL >= 0 ? 'var(--color-positive)' : 'var(--color-negative)',
                   }}>
-                    {formatCurrency(cell.totalPL * 100)}
+                    {formatCurrency(cell.totalPL)}
                   </div>
                   <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
                     {cell.totalTrades}t · {cell.winRate.toFixed(0)}%
@@ -348,7 +349,7 @@ function TableView({ summaries }: { summaries: DaySummary[] }) {
                     padding: '10px 10px', fontWeight: 700, whiteSpace: 'nowrap',
                     color: s.totalPL >= 0 ? 'var(--color-positive)' : 'var(--color-negative)',
                   }}>
-                    {formatCurrency(s.totalPL * 100)}
+                    {formatCurrency(s.totalPL)}
                   </td>
                   <td style={{
                     padding: '10px 10px', whiteSpace: 'nowrap',

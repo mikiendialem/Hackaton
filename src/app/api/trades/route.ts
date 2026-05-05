@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
+import { calculatePL, calculateR } from '@/lib/plCalculator'
 
 export async function GET() {
   const session = await auth()
@@ -26,26 +27,46 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const { symbol, direction, date, entry, exit, size, fees, notes, strategy, session: tradeSession } = body
+    const {
+      symbol, direction, date,
+      entry, exit, size, fees, notes,
+      strategy, session: tradeSession,
+      instrument_type,
+    } = body
 
-    const priceDiff = direction === 'long' ? exit - entry : entry - exit
-    const gross = priceDiff * size
-    const pl = gross - (fees || 0)
-    const riskPerUnit = entry * 0.01
-    const risk = riskPerUnit * size || 1
-    const r_multiple = pl / risk
+    const pl = calculatePL(
+      instrument_type || 'forex',
+      direction,
+      Number(entry),
+      Number(exit),
+      Number(size),
+      Number(fees) || 0
+    )
+
+    const r_multiple = calculateR(
+      pl,
+      Number(entry),
+      Number(size),
+      instrument_type || 'forex'
+    )
 
     const { data, error } = await supabaseAdmin
       .from('trades')
       .insert({
         user_id: session.user.id,
-        symbol, direction, date,
-        entry, exit, size,
-        fees: fees || 0,
-        pl, r_multiple,
+        symbol,
+        direction,
+        date,
+        entry: Number(entry),
+        exit: Number(exit),
+        size: Number(size),
+        fees: Number(fees) || 0,
+        pl,
+        r_multiple,
         notes: notes || '',
         strategy: strategy || 'None',
         session: tradeSession || 'None',
+        instrument_type: instrument_type || 'forex',
       })
       .select()
       .single()

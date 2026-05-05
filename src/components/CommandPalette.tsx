@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Trade } from '@/types/index'
+import { INSTRUMENT_TYPES } from '@/lib/plCalculator'
 
 const STRATEGIES = ['None', 'SMC', 'ICT', 'Breakout', 'Reversal', 'News', 'Liquidity Grab', 'Scalp', 'Swing']
 const SESSIONS = ['None', 'London', 'New York', 'Asia']
@@ -60,6 +61,7 @@ export default function CommandPalette({ onTradeAdded }: Props) {
       notes: fd.get('notes') as string,
       strategy: fd.get('strategy') as string,
       session: fd.get('session') as string,
+      instrument_type: fd.get('instrument_type') as string,
     }
 
     const res = await fetch('/api/trades', {
@@ -222,6 +224,18 @@ export default function CommandPalette({ onTradeAdded }: Props) {
                       style={inputStyle}
                       onFocus={focusHandler} onBlur={blurHandler}
                     />
+                    <p style={{ margin: '3px 0 0', fontSize: '0.68rem', color: 'rgba(148,163,184,0.5)' }}>
+                      Use exact symbol: XAUUSD, NAS100, EURUSD, GBPUSD...
+                    </p>
+                  </div>
+                  {/* Instrument Type */}
+                  <div>
+                    <label style={labelStyle}>Instrument Type</label>
+                    <select name="instrument_type" style={inputStyle} onFocus={focusHandler} onBlur={blurHandler}>
+                      {INSTRUMENT_TYPES.map(i => (
+                        <option key={i.value} value={i.value}>{i.label}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label style={labelStyle}>Direction</label>
@@ -264,7 +278,7 @@ export default function CommandPalette({ onTradeAdded }: Props) {
                   <div>
                     <label style={labelStyle}>Size</label>
                     <input
-                      name="size" type="number" step="1" required
+                      name="size" type="number" step="0.01" required
                       placeholder="1"
                       style={inputStyle}
                       onFocus={focusHandler} onBlur={blurHandler}

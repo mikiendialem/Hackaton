@@ -121,16 +121,7 @@ export default function TradeTable({ trades, onTradeDeleted }: Props) {
                       color: t.pl >= 0 ? 'var(--color-positive)' : 'var(--color-negative)',
                     }}>
                       {formatCurrency(
-                          t.pl * (
-                            {
-                              EURUSD: 100000,
-                              GBPUSD: 100000,
-                              USDJPY: 1000,
-                              XAUUSD: 100,
-                              NAS100: 100,
-                            }[t.symbol] || 1
-                          )
-                          )}
+                        t.pl)}
                     </td>
                     <td style={{
                       padding: '8px 10px',

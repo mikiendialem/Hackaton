@@ -126,13 +126,13 @@ export default function DashboardPage() {
                     {
                       label: 'Best Trade',
                       value: trades.length
-                        ? `$${Math.max(...trades.map(t => t.pl)).toFixed(2)}`
+                        ? `$${Math.max(...trades.map(t => t.pl * 100)).toFixed(2)}`
                         : '$0.00'
                     },
                     {
                       label: 'Worst Trade',
                       value: trades.length
-                        ? `-$${Math.abs(Math.min(...trades.map(t => t.pl))).toFixed(2)}`
+                        ? `-$${Math.abs(Math.min(...trades.map(t => t.pl * 100))).toFixed(2)}`
                         : '$0.00'
                     },
                   ].map(stat => (

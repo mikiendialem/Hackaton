@@ -13,6 +13,7 @@ export interface Trade {
   notes: string
   strategy: string
   session: string
+  instrument_type: string
   entry_time?: string
   exit_time?: string
   created_at: string

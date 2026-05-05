@@ -13,11 +13,13 @@ function calculateMetrics(trades: Trade[]) {
   let totalR = 0
 
   trades.forEach(t => {
-    if (t.pl > 0) { wins++; profit += t.pl }
-    else if (t.pl < 0) { losses++; loss += t.pl }
-    if (best === null || t.pl > best) best = t.pl
-    if (worst === null || t.pl < worst) worst = t.pl
-    totalR += t.r_multiple
+    const pl = Number(t.pl)
+    const r = Number(t.r_multiple)
+    if (pl > 0) { wins++; profit += pl }
+    else if (pl < 0) { losses++; loss += pl }
+    if (best === null || pl > best) best = pl
+    if (worst === null || pl < worst) worst = pl
+    totalR += r
   })
 
   const total = trades.length
@@ -32,21 +34,18 @@ export default function SummaryCards({ trades }: { trades: Trade[] }) {
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: 14, marginBottom: 18 }}>
-      {/* Win Rate */}
       <div className="card summary-card">
         <h2 style={{ margin: '0 0 4px', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)' }}>Win Rate</h2>
         <p style={{ margin: '0 0 6px', fontSize: '1.6rem', letterSpacing: '-0.04em' }}>{m.winRate.toFixed(1)}%</p>
         <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Winning trades / total trades</p>
       </div>
 
-      {/* Total Profit */}
       <div className="card summary-card">
         <h2 style={{ margin: '0 0 4px', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)' }}>Total Profit</h2>
         <p style={{ margin: '0 0 6px', fontSize: '1.6rem', letterSpacing: '-0.04em', color: 'var(--color-positive)' }}>{formatCurrency(m.profit)}</p>
         <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Sum of all positive trades</p>
       </div>
 
-      {/* Total Loss */}
       <div className="card summary-card" style={{ background: 'radial-gradient(circle at 0 0, rgba(248,113,113,0.16), #020617)' }}>
         <h2 style={{ margin: '0 0 4px', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)' }}>Total Loss</h2>
         <p style={{ margin: '0 0 6px', fontSize: '1.6rem', letterSpacing: '-0.04em', color: 'var(--color-negative)' }}>{formatCurrency(m.loss)}</p>

@@ -13,47 +13,31 @@ export function formatPct(value: number): string {
 // ─── Core Metrics ─────────────────────────────────────────────────
 export function calcWinRate(trades: Trade[]): number {
   if (!trades.length) return 0
-  const wins = trades.filter(t => t.pl > 0).length
+  const wins = trades.filter(t => Number(t.pl) > 0).length
   return (wins / trades.length) * 100
 }
 
 export function calcProfitFactor(trades: Trade[]): number {
-  const grossProfit = trades.filter(t => t.pl > 0).reduce((s, t) => s + t.pl, 0)
-  const grossLoss = Math.abs(trades.filter(t => t.pl < 0).reduce((s, t) => s + t.pl, 0))
+  const grossProfit = trades
+    .filter(t => Number(t.pl) > 0)
+    .reduce((s, t) => s + Number(t.pl), 0)
+  const grossLoss = Math.abs(
+    trades.filter(t => Number(t.pl) < 0)
+    .reduce((s, t) => s + Number(t.pl), 0)
+  )
   if (grossLoss === 0) return grossProfit > 0 ? Infinity : 0
   return grossProfit / grossLoss
 }
 
 export function calcAvgR(trades: Trade[]): number {
   if (!trades.length) return 0
-  return trades.reduce((s, t) => s + t.r_multiple, 0) / trades.length
-}
-
-// export function calcTotalPL(trades: Trade[]): number {
-//   return trades.reduce((s, t) => s + t.pl, 0)
-// }
-const instruments: Record<string, { pipValuePerLot: number }> = {
-  EURUSD: { pipValuePerLot: 100000 },
-  GBPUSD: { pipValuePerLot: 100000 },
-  USDJPY: { pipValuePerLot: 1000 },
-  XAUUSD: { pipValuePerLot: 100 },
-  NAS100: { pipValuePerLot: 100 },
-}
-
-function getCorrectPL(t: Trade) {
-  const instrument = instruments[t.symbol] || { pipValuePerLot: 1000 }
-
-  const move =
-    t.direction === 'long'
-      ? t.exit - t.entry
-      : t.entry - t.exit
-
-  return move * t.size * instrument.pipValuePerLot - (t.fees || 0)
+  return trades.reduce((s, t) => s + Number(t.r_multiple), 0) / trades.length
 }
 
 export function calcTotalPL(trades: Trade[]): number {
-  return trades.reduce((s, t) => s + getCorrectPL(t), 0)
+  return trades.reduce((s, t) => s + Number(t.pl), 0)
 }
+
 // ─── Equity Curve ─────────────────────────────────────────────────
 export function buildEquityCurve(trades: Trade[]): {
   labels: string[]
@@ -71,7 +55,7 @@ export function buildEquityCurve(trades: Trade[]): {
   let peak = 0
 
   sorted.forEach((t, i) => {
-    running += t.pl
+    running += Number(t.pl)
     if (running > peak) peak = running
 
     const dd = running - peak
@@ -109,23 +93,13 @@ export function calcStrategyStats(trades: Trade[]): StrategyStats[] {
 
   return Array.from(map.entries())
     .map(([name, stratTrades]) => {
-      const wins = stratTrades.filter(t => t.pl > 0).length
-      const losses = stratTrades.filter(t => t.pl < 0).length
+      const wins = stratTrades.filter(t => Number(t.pl) > 0).length
+      const losses = stratTrades.filter(t => Number(t.pl) < 0).length
       const totalPL = calcTotalPL(stratTrades)
       const winRate = calcWinRate(stratTrades)
       const profitFactor = calcProfitFactor(stratTrades)
       const avgR = calcAvgR(stratTrades)
-
-      return {
-        name,
-        trades: stratTrades.length,
-        wins,
-        losses,
-        winRate,
-        totalPL,
-        profitFactor,
-        avgR,
-      }
+      return { name, trades: stratTrades.length, wins, losses, winRate, totalPL, profitFactor, avgR }
     })
     .sort((a, b) => b.trades - a.trades)
 }
@@ -175,15 +149,13 @@ export function calcRiskMetrics(trades: Trade[]): RiskMetrics {
     }
   }
 
-  // Average risk per trade (1% of entry * size approximation)
-  const avgRisk = trades.reduce((s, t) => s + (t.entry * 0.01 * t.size), 0) / trades.length
+  const avgRisk = trades.reduce((s, t) => s + (Number(t.entry) * 0.01 * Number(t.size)), 0) / trades.length
 
-  // Max consecutive losses
   let maxConsec = 0
   let currentConsec = 0
   const sorted = [...trades].sort((a, b) => a.date.localeCompare(b.date))
   sorted.forEach(t => {
-    if (t.pl < 0) {
+    if (Number(t.pl) < 0) {
       currentConsec++
       if (currentConsec > maxConsec) maxConsec = currentConsec
     } else {
@@ -191,19 +163,19 @@ export function calcRiskMetrics(trades: Trade[]): RiskMetrics {
     }
   })
 
-  // Daily loss limit (worst single day)
   const dayMap = new Map<string, number>()
   trades.forEach(t => {
-    dayMap.set(t.date, (dayMap.get(t.date) || 0) + t.pl)
+    dayMap.set(t.date, (dayMap.get(t.date) || 0) + Number(t.pl))
   })
   const dailyLossLimit = Math.min(0, ...Array.from(dayMap.values()))
 
-  // Risk of ruin (simplified Kelly-based)
   const winRate = calcWinRate(trades) / 100
-  const avgWin = trades.filter(t => t.pl > 0).reduce((s, t) => s + t.pl, 0) /
-    (trades.filter(t => t.pl > 0).length || 1)
-  const avgLoss = Math.abs(trades.filter(t => t.pl < 0).reduce((s, t) => s + t.pl, 0) /
-    (trades.filter(t => t.pl < 0).length || 1))
+  const avgWin = trades.filter(t => Number(t.pl) > 0).reduce((s, t) => s + Number(t.pl), 0) /
+    (trades.filter(t => Number(t.pl) > 0).length || 1)
+  const avgLoss = Math.abs(
+    trades.filter(t => Number(t.pl) < 0).reduce((s, t) => s + Number(t.pl), 0) /
+    (trades.filter(t => Number(t.pl) < 0).length || 1)
+  )
   const rr = avgLoss > 0 ? avgWin / avgLoss : 1
   const riskOfRuin = winRate > 0 && rr > 0
     ? Math.pow((1 - winRate) / winRate, 10) * 100
@@ -234,6 +206,8 @@ export function calcRDistribution(trades: Trade[]) {
 
   return buckets.map(bucket => ({
     label: bucket.label,
-    count: trades.filter(t => t.r_multiple >= bucket.min && t.r_multiple < bucket.max).length,
+    count: trades.filter(t =>
+      Number(t.r_multiple) >= bucket.min && Number(t.r_multiple) < bucket.max
+    ).length,
   }))
 }
